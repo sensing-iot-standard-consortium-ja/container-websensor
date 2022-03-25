@@ -1,0 +1,41 @@
+{
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch via npm",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "env": {
+                "NODE_OPTIONS": "--inspect",
+                "NODE_ENV": "development"
+            },
+            "outFiles": ["${workspaceFolder}/.nuxt/**/*.js"],
+            // "stopOnEntry": true,
+            "port": 9229,
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+        },
+        // {
+        //     "name": "Attach to Process",
+        //     "type": "node",
+        //     "request": "attach",
+        //     "port": 9229
+        // },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
+        }
+
+    ]
+}
