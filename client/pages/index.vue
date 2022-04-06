@@ -29,7 +29,15 @@
         <el-checkbox v-model="isRegister" @click="isRegister=!isRegister" border>post</el-checkbox>
         <el-select v-model="throttle_milisec" placeholder="Select">
           <el-option
-            v-for="item in [0, 10, 50, 100, 200, 500, 1000, 3000, 10000, 1000000000]"
+            v-for="item in [0, 10, 50, 100, 200, 500, 1000, 3000, 10000, 300000]"
+            :key="item"
+            :label="item"
+            :value="item">
+          </el-option>
+        </el-select>
+        <el-select v-model="data_type" placeholder="Select">
+          <el-option
+            v-for='item in ["json", "container", "json&container"]'
             :key="item"
             :label="item"
             :value="item">
@@ -37,8 +45,8 @@
         </el-select>
 
         <el-button type="primary" @click="request_permission">モーションの許可</el-button>
-        <el-button type="primary" @click="check_with_auth">疎通チェック</el-button>
-        <el-button type="primary" @click="post_binary_data">コンテナポスト</el-button>
+        <el-button type="primary" @click="health">疎通チェック</el-button>
+        <el-button type="primary" @click="post_validation">1shot</el-button>
       </el-main>
     </el-container>
   </el-container>
@@ -62,7 +70,8 @@ export default {
       isRegister: false,
       // throttle
       throttle_milisec: 1000,
-      access_token: "undef"
+      access_token: "undef",
+      data_type: "json&container"
     }
   },
   async fetch(){
@@ -87,9 +96,14 @@ export default {
   },
   fetchOnServer: true,
   computed:{
-    orion_url: function(){
-      return 'https://839f-124-36-47-90.ngrok.io'
-//      return process.env.NUXT_ENV_ORION_ENDPOINT
+    url_base: function(){
+      return '/api'
+    },
+    c_topic: function(){
+      return 'mb_ctopic'
+    },
+    j_topic: function(){
+      return 'mb_jtopic'
     },
     // token: async function(){
     //   return access_token
@@ -119,6 +133,11 @@ export default {
       dataview.setFloat64(65, gamma)
       return payload
     },
+    register_payload_json: function(){
+      const [x, y, z, alpha, beta, gamma] = [this.x, this.y, this.z, this.alpha, this.beta, this.gamma]
+      const dt = Number.parseInt(Date.now() / 1000)
+      return {dt, x, y, z, alpha, beta, gamma}
+    },
     register_payload_text: function(){
       return [...new Uint8Array(this.register_payload_binary)].map(e=>e.toString(16)).join(" ")
     }
@@ -144,15 +163,6 @@ export default {
     window.removeEventListener('devicemotion', this.throttled(this.devicemotion, this.throttle_milisec))
   },
   methods: {
-    cap: function(num){
-      if (num < 0){
-        return 0
-      }
-      else if(num > 100){
-        return 100
-      }
-      return num
-    },
     throttled: function(func, throttle) {
       if(!this.memoize_thrttoled)
         this.memoize_thrttoled = _.memoize((func, throttle)=> _.throttle(func, throttle), (func, throttle)=> func.name + throttle)
@@ -179,56 +189,71 @@ export default {
       const {x, y, z} = event.accelerationIncludingGravity;
       [this.x, this.y, this.z] = [x, y, z];
     },
-    post_single_data: async function(){
-      this.$message({
-        message: new Date().toISOString(),
-        duration: this.throttle_milisec * 2
-      })
-      if(this.x === undefined){
-        console.log("no value")
-      }
-      const {status, data} = await axios.post(`${this.orion_url}/container/parse`, this.register_data)
-      if(status != 200)
-        this.$message({
-          type: 'error',
-          message: new Date().toISOString(),
-          duration: 5000
-        })
-    },
+    // post_single_data: async function(){
+    //   this.$message({
+    //     message: new Date().toISOString(),
+    //     duration: this.throttle_milisec * 2
+    //   })
+    //   if(this.x === undefined){
+    //     console.log("no value")
+    //   }
+    //   const {status, data} = await axios.post(`${this.url_base}/${this.topic}/container`, this.register_data)
+    //   if(status != 200)
+    //     this.$message({
+    //       type: 'error',
+    //       message: new Date().toISOString(),
+    //       duration: 5000
+    //     })
+    // },
     c_slice: function(start, end){
       return [...new Uint8Array(this.register_payload_binary)].slice(start, end).map(e=>e.toString(16).padStart(2, "0")).join(" ")
     },
-    post_binary_data: async function(){
-      this.$message({
-        message: new Date().toISOString(),
-        duration: this.throttle_milisec * 2
-      })
-      if(this.x === undefined){
-        console.log("no value")
-      }
-      const url = `${this.orion_url}/container/parse`
-      const {status, data} = await axios.post(url, this.register_payload_binary)
+    post_json_data: async function(){
+      const url = `${this.url_base}/${this.c_topic}/json`
+      const {status, data} = await axios.post(url, this.register_payload_json)
       if(status != 200){
         this.$message({
           type: 'error',
           message: new Date().toISOString(),
-          duration: 5000
+          duration: this.throttle_milisec / 2
         })
       }
       else{
         this.$message({
           message: JSON.stringify(data, null, 4),
-          duration: 5000
+          duration: this.throttle_milisec / 2
+        })
+      }
+    },
+    post_binary_data: async function(){
+      const url = `${this.url_base}/${this.j_topic}/container`
+      const {status, data} = await axios.post(url, this.register_payload_binary)
+      if(status != 200){
+        this.$message({
+          type: 'error',
+          message: new Date().toISOString(),
+          duration: this.throttle_milisec / 2
+        })
+      }
+      else{
+        this.$message({
+          message: JSON.stringify(data, null, 4),
+          duration: this.throttle_milisec / 2
         })
       }
     },
     post_validation: function(){
       if(!this.isRegister)
         return
-      return this.throttled(this.post_binary_data, this.throttle_milisec)()
+      if(this.data_type.includes("container")){
+        this.throttled(this.post_binary_data, this.throttle_milisec)()
+      }
+      if(this.data_type.includes("json")){
+        this.throttled(this.post_json_data, this.throttle_milisec)()
+      }
     },
-    check_with_auth: async function(){
-      const {status} = await axios.get(`${this.orion_url}/health`)
+    health: async function(){
+      const {status} = await axios.get(`/api/health`)
       if(status == 200){
         this.$message({
           message: "ping success",
@@ -242,7 +267,6 @@ export default {
           duration: 5000
         })
       }
-
     }
   }
 }

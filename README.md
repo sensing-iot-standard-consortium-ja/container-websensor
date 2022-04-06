@@ -70,7 +70,7 @@ $ yarn dev
 
 $ cat > .env
 NGROK_AUTHTOKEN='{ngrok_auth_token here}'
-NUXT_ENV_ORION_ENDPOINT='https://api.data.iotbase.in/idas/json/data/iot/json'
+NUXT_ENV_ORION_ENDPOINT='https://839f-124-36-47-90.ngrok.io/container/parse'
 NUXT_ENV_ORION_USERNAME='username'
 NUXT_ENV_ORION_PASSWORD='password'
 NUXT_ENV_ORION_OAUTH2_TOKEN='{uuidlike token}'
