@@ -3,14 +3,6 @@
     <el-header>MotionRecorder</el-header>
     <el-container>
       <el-main>
-      <!--
-        <el-progress :stroke-width="20" :percentage="cap((x+10)*5)" :show-text="false"></el-progress>
-        <el-progress :stroke-width="20" :percentage="cap((y+10)*5)" :show-text="false"></el-progress>
-        <el-progress :stroke-width="20" :percentage="cap((z+10)*5)" :show-text="false"></el-progress>
-        <el-progress :stroke-width="20" :percentage="cap(alpha/360 * 100)" :show-text="false"></el-progress>
-        <el-progress :stroke-width="20" :percentage="cap((beta+180)/360*100)" :show-text="false"></el-progress>
-        <el-progress :stroke-width="20" :percentage="cap((gamma + 90) / 90 *100)" :show-text="false"></el-progress>
-      -->
         <pre>
         加速度(include Gravity)
           X: {{x}}
@@ -29,9 +21,9 @@
           payload(x): {{c_slice(25, 33)}}
           payload(y): {{c_slice(33, 41)}}
           payload(z): {{c_slice(41, 49)}}
-          payload(ax): {{c_slice(49, 57)}}
-          payload(ay): {{c_slice(57, 65)}}
-          payload(az): {{c_slice(65, 73)}}
+          payload(α): {{c_slice(49, 57)}}
+          payload(β): {{c_slice(57, 65)}}
+          payload(γ): {{c_slice(65, 73)}}
           {{register_payload_text}}
         </pre>
         <el-checkbox v-model="isRegister" @click="isRegister=!isRegister" border>post</el-checkbox>
@@ -44,7 +36,7 @@
           </el-option>
         </el-select>
 
-        <el-button type="primary" @click="request_permission">iOS13↑モーションの許可</el-button>
+        <el-button type="primary" @click="request_permission">モーションの許可</el-button>
         <el-button type="primary" @click="check_with_auth">疎通チェック</el-button>
         <el-button type="primary" @click="post_binary_data">コンテナポスト</el-button>
       </el-main>
@@ -69,7 +61,7 @@ export default {
       // apikey
       isRegister: false,
       // throttle
-      throttle_milisec: 100,
+      throttle_milisec: 1000,
       access_token: "undef"
     }
   },
@@ -96,7 +88,8 @@ export default {
   fetchOnServer: true,
   computed:{
     orion_url: function(){
-      return process.env.NUXT_ENV_ORION_ENDPOINT
+      return 'https://839f-124-36-47-90.ngrok.io'
+//      return process.env.NUXT_ENV_ORION_ENDPOINT
     },
     // token: async function(){
     //   return access_token
@@ -194,18 +187,7 @@ export default {
       if(this.x === undefined){
         console.log("no value")
       }
-      const {status, data} = await axios.post(`${this.orion_url}/idas/json/data/iot/json`, this.register_data, {
-        params:{
-          k: "yapparinekogasuki",
-          i: "motion00"
-        },
-        headers: {
-          "Content-Type": "application/json",
-          "X-Auth-Token": this.access_token,
-          "fiware-service": "example",
-          "fiware-servicepath": "/"
-        }
-      })
+      const {status, data} = await axios.post(`${this.orion_url}/container/parse`, this.register_data)
       if(status != 200)
         this.$message({
           type: 'error',
@@ -224,7 +206,7 @@ export default {
       if(this.x === undefined){
         console.log("no value")
       }
-      const url = process.env.NUXT_ENV_CONTAINER_POST_URL
+      const url = `${this.orion_url}/container/parse`
       const {status, data} = await axios.post(url, this.register_payload_binary)
       if(status != 200){
         this.$message({
@@ -246,21 +228,17 @@ export default {
       return this.throttled(this.post_binary_data, this.throttle_milisec)()
     },
     check_with_auth: async function(){
-      const {status} = await axios.get(`${this.orion_url}/orion/version`,{
-        headers:{
-          "X-Auth-Token": this.access_token
-        }
-      })
+      const {status} = await axios.get(`${this.orion_url}/health`)
       if(status == 200){
         this.$message({
-          message: "authentication success",
+          message: "ping success",
           duration: 5000
         })
       }
       else{
         this.$message({
           type: 'error',
-          message: "authentication failed",
+          message: "ping failed",
           duration: 5000
         })
       }
