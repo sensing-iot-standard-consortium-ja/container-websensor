@@ -209,7 +209,7 @@ export default {
       return [...new Uint8Array(this.register_payload_binary)].slice(start, end).map(e=>e.toString(16).padStart(2, "0")).join(" ")
     },
     post_json_data: async function(){
-      const url = `${this.url_base}/${this.c_topic}/json`
+      const url = `${this.url_base}/${this.j_topic}/json`
       const {status, data} = await axios.post(url, this.register_payload_json)
       if(status != 200){
         this.$message({
@@ -226,7 +226,7 @@ export default {
       }
     },
     post_binary_data: async function(){
-      const url = `${this.url_base}/${this.j_topic}/container`
+      const url = `${this.url_base}/${this.c_topic}/container`
       const {status, data} = await axios.post(url, this.register_payload_binary)
       if(status != 200){
         this.$message({
