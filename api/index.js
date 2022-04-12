@@ -9,6 +9,13 @@ const
     Producer = kafka.Producer,
     client = new kafka.KafkaClient({kafkaHost}),
     producer = new Producer(client)
+    producer.on('ready', function () {
+        console.log("connect to kafka cluster");
+    });
+    producer.on('error', function (err) {
+        console.log("kafka client can't ready...");
+        console.log("kafka cluster " + kafkaHost + " ");
+    })
 
 app.get("/health", (req, res) => {
     res.send({ "status": "ok" });

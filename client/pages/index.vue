@@ -1,40 +1,41 @@
 <template>
   <el-container>
-    <el-header>MotionRecorder</el-header>
     <el-container>
       <el-main>
         <pre>
-        加速度(include Gravity)
-          X: {{x}}
-          Y: {{y}}
-          Z: {{z}}
-        傾き
-          alpha: {{alpha}}
-          beta: {{beta}}
-          gamma: {{gamma}}
-        Container
-          type: {{c_slice(0, 2)}}
-          length: {{c_slice(2, 4)}}
-          data-index: {{c_slice(4, 5)}}
-          data-id: {{c_slice(5, 21)}}
-          payload(dt): {{c_slice(21, 25)}}
-          payload(x): {{c_slice(25, 33)}}
-          payload(y): {{c_slice(33, 41)}}
-          payload(z): {{c_slice(41, 49)}}
-          payload(α): {{c_slice(49, 57)}}
-          payload(β): {{c_slice(57, 65)}}
-          payload(γ): {{c_slice(65, 73)}}
-          {{register_payload_text}}
+TestlabWebSensor
+
+加速度(include Gravity)
+  X: {{x}}
+  Y: {{y}}
+  Z: {{z}}
+傾き
+  alpha: {{alpha}}
+  beta: {{beta}}
+  gamma: {{gamma}}
+Container
+  type: {{c_slice(0, 2)}}
+  length: {{c_slice(2, 4)}}
+  data-index: {{c_slice(4, 5)}}
+  data-id: {{c_slice(5, 21)}}
+  payload(dt): {{c_slice(21, 25)}}
+  payload(x): {{c_slice(25, 33)}}
+  payload(y): {{c_slice(33, 41)}}
+  payload(z): {{c_slice(41, 49)}}
+  payload(α): {{c_slice(49, 57)}}
+  payload(β): {{c_slice(57, 65)}}
+  payload(γ): {{c_slice(65, 73)}}
+  {{register_payload_text}}
         </pre>
-        <el-checkbox v-model="isRegister" @click="isRegister=!isRegister" border>post</el-checkbox>
         <el-select v-model="throttle_milisec" placeholder="Select">
           <el-option
             v-for="item in [0, 10, 50, 100, 200, 500, 1000, 3000, 10000, 300000]"
             :key="item"
-            :label="item"
+            :label="item +' msec'"
             :value="item">
           </el-option>
         </el-select>
+        <el-checkbox v-model="isRegister" @click="isRegister=!isRegister" border>定期送信</el-checkbox>
         <el-select v-model="data_type" placeholder="Select">
           <el-option
             v-for='item in ["json", "container", "json&container"]'
@@ -45,8 +46,9 @@
         </el-select>
 
         <el-button type="primary" @click="request_permission">モーションの許可</el-button>
-        <el-button type="primary" @click="health">疎通チェック</el-button>
-        <el-button type="primary" @click="post_validation">1shot</el-button>
+        <el-button @click="health">疎通チェック</el-button>
+        <el-button @click="post_data">単発送信</el-button>
+        <el-button @click="set_random">値の更新</el-button>
       </el-main>
     </el-container>
   </el-container>
@@ -149,8 +151,9 @@ export default {
       window.removeEventListener('devicemotion', this.throttled(this.devicemotion, oldThrottle))
       window.addEventListener('devicemotion', this.throttled(this.devicemotion, newThrottle))
     },
-    register_data(){
-      this.post_validation()
+    isRegister: function(){
+      if(this.isRegister)
+        setTimeout(this.polling, this.throttle_milisec)
     }
   },
   mounted(){
@@ -163,6 +166,12 @@ export default {
     window.removeEventListener('devicemotion', this.throttled(this.devicemotion, this.throttle_milisec))
   },
   methods: {
+    polling(){
+      if(!this.isRegister)
+        return
+      this.post_data()
+      setTimeout(this.polling, this.throttle_milisec)
+    },
     throttled: function(func, throttle) {
       if(!this.memoize_thrttoled)
         this.memoize_thrttoled = _.memoize((func, throttle)=> _.throttle(func, throttle), (func, throttle)=> func.name + throttle)
@@ -189,22 +198,14 @@ export default {
       const {x, y, z} = event.accelerationIncludingGravity;
       [this.x, this.y, this.z] = [x, y, z];
     },
-    // post_single_data: async function(){
-    //   this.$message({
-    //     message: new Date().toISOString(),
-    //     duration: this.throttle_milisec * 2
-    //   })
-    //   if(this.x === undefined){
-    //     console.log("no value")
-    //   }
-    //   const {status, data} = await axios.post(`${this.url_base}/${this.topic}/container`, this.register_data)
-    //   if(status != 200)
-    //     this.$message({
-    //       type: 'error',
-    //       message: new Date().toISOString(),
-    //       duration: 5000
-    //     })
-    // },
+    set_random(){
+      this.alpha = _.random(0, 360, true)
+      this.beta = _.random(-180, 180, true)
+      this.gamma = _.random(-90, 90, true)
+      this.x = _.random(-10, 10, true)
+      this.y = _.random(-10, 10, true)
+      this.z = _.random(-10, 10, true)
+    },
     c_slice: function(start, end){
       return [...new Uint8Array(this.register_payload_binary)].slice(start, end).map(e=>e.toString(16).padStart(2, "0")).join(" ")
     },
@@ -242,9 +243,7 @@ export default {
         })
       }
     },
-    post_validation: function(){
-      if(!this.isRegister)
-        return
+    post_data: function(){
       if(this.data_type.includes("container")){
         this.throttled(this.post_binary_data, this.throttle_milisec)()
       }
