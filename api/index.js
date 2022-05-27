@@ -3,7 +3,7 @@ const app = express();
 const body = require('body-parser');
 app.use(body.raw({ type:'*/*' }));
 
-const kafkaHost = "127.0.0.1:9092"
+const kafkaHost = "localhost:9092"
 const
     kafka = require('kafka-node'),
     Producer = kafka.Producer,
