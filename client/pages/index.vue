@@ -18,13 +18,13 @@ Container
   length: {{ c_slice(2, 4) }}
   data-index: {{ c_slice(4, 5) }}
   data-id: {{ c_slice(5, 21) }}
-  payload(dt): {{ c_slice(21, 25) }}
-  payload(x): {{ c_slice(25, 33) }}
-  payload(y): {{ c_slice(33, 41) }}
-  payload(z): {{ c_slice(41, 49) }}
-  payload(α): {{ c_slice(49, 57) }}
-  payload(β): {{ c_slice(57, 65) }}
-  payload(γ): {{ c_slice(65, 73) }}
+  payload(dt): {{ c_slice(21, 29) }}
+  payload(x): {{ c_slice(25, 37) }}
+  payload(y): {{ c_slice(37, 45) }}
+  payload(z): {{ c_slice(45, 53) }}
+  payload(α): {{ c_slice(53, 61) }}
+  payload(β): {{ c_slice(61, 69) }}
+  payload(γ): {{ c_slice(69, 77) }}
   {{ register_payload_text }}
         </pre>
         <el-select v-model="throttle_milisec" placeholder="Select">
@@ -189,7 +189,7 @@ export default {
         this.beta,
         this.gamma
       ];
-      const dt = Number.parseInt(Date.now());
+      const dt = Date.now();
       return { dt, x, y, z, alpha, beta, gamma };
     },
     register_payload_binary: function() {
@@ -201,22 +201,22 @@ export default {
         this.beta,
         this.gamma
       ];
-      const payload = new ArrayBuffer(73);
+      const payload = new ArrayBuffer(77);
       const dataview = new DataView(payload);
       dataview.setUint16(0, 0); // ContainerType
-      dataview.setUint16(2, 73); // ContainerLength 52+16+2+2+1
+      dataview.setUint16(2, 77); // ContainerLength 52+16+2+2+1
       dataview.setUint8(4, 0); // DataIndex(1byte)
       dataview.setUint32(5, 0x00112233); // DataIDを4回に分けて書く
       dataview.setUint32(9, 0x44556677); // DataIDを4回に分けて書く
       dataview.setUint32(13, 0x8899aabb); // DataIDを4回に分けて書く
       dataview.setUint32(17, 0xccddeeff); // DataIDを4回に分けて書く
-      dataview.setUint32(21, Number.parseInt(Date.now()));
-      dataview.setFloat64(25, x);
-      dataview.setFloat64(33, y);
-      dataview.setFloat64(41, z);
-      dataview.setFloat64(49, alpha);
-      dataview.setFloat64(57, beta);
-      dataview.setFloat64(65, gamma);
+      dataview.setBigUint64(21, BigInt(Date.now()));
+      dataview.setFloat64(29, x);
+      dataview.setFloat64(37, y);
+      dataview.setFloat64(45, z);
+      dataview.setFloat64(53, alpha);
+      dataview.setFloat64(61, beta);
+      dataview.setFloat64(69, gamma);
       return payload;
     },
     polling() {
