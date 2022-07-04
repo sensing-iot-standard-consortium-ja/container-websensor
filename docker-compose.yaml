@@ -1,7 +1,7 @@
 # this file for build
 services:
   app:
-    image: 501480641708.dkr.ecr.ap-northeast-1.amazonaws.com/websensor:0.0.1
+    image: public.ecr.aws/l1b7e4q9/websensor:0.0.1
     build: .
     ports:
       - "80:3000"
