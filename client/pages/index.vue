@@ -25,7 +25,7 @@ Container
   payload(α): {{ c_slice(53, 61) }}
   payload(β): {{ c_slice(61, 69) }}
   payload(γ): {{ c_slice(69, 77) }}
-  {{ register_payload_text }}
+  <!-- {{ register_payload_text }} -->
         </pre>
         <el-select v-model="throttle_milisec" placeholder="Select">
           <el-option
@@ -93,7 +93,9 @@ export default {
       // throttle
       throttle_milisec: 1000,
       access_token: "undef",
-      data_type: "json&container"
+      data_type: "container",
+      motionEventLister: null,
+      orientationEventLister: null
     };
   },
   async fetch() {
@@ -136,50 +138,55 @@ export default {
     }
   },
   watch: {
-    throttle_milisec: function(newThrottle, oldThrottle) {
-      window.removeEventListener(
-        "deviceorientation",
-        this.throttled(this.deviceOrientation, oldThrottle)
-      );
-      window.addEventListener(
-        "deviceorientation",
-        this.throttled(this.deviceOrientation, newThrottle)
-      );
-      window.removeEventListener(
-        "devicemotion",
-        this.throttled(this.devicemotion, oldThrottle)
-      );
-      window.addEventListener(
-        "devicemotion",
-        this.throttled(this.devicemotion, newThrottle)
-      );
+    throttle_milisec: function() {
+      this.update_motion_listeners();
+      this.update_orientation_listeners();
     },
     isRegister: function() {
       if (this.isRegister) setTimeout(this.polling, this.throttle_milisec);
     }
   },
   mounted() {
-    window.addEventListener(
-      "deviceorientation",
-      this.throttled(this.deviceOrientation, this.throttle_milisec)
-    );
-    window.addEventListener(
-      "devicemotion",
-      this.throttled(this.devicemotion, this.throttle_milisec)
-    );
+    this.update_motion_listeners(this.throttle_milisec);
+    this.update_orientation_listeners(this.throttle_milisec);
     this.apikey = this.$route.query.key;
   },
   destroyed() {
+    window.removeEventListener("devicemotion", this.motionEventLister);
     window.removeEventListener(
       "deviceorientation",
-      this.throttled(this.deviceOrientation, this.throttle_milisec)
-    );
-    window.removeEventListener(
-      "devicemotion",
-      this.throttled(this.devicemotion, this.throttle_milisec)
+      this.orientationEventLister
     );
   },
   methods: {
+    update_motion_listeners: function() {
+      // 今設定されているmotionのLisnterを破棄
+      if (this.motionEventLister) {
+        window.removeEventListener("devicemotion", this.motionEventLister);
+      }
+      // 新しいハンドラを定義し破棄のために記録
+      const newListner = _.throttle(this.devicemotion, this.throttle_milisec);
+      window.addEventListener("devicemotion", newListner);
+      // 新しいハンドラを破棄のために記録
+      this.motionEventLister = newListner;
+    },
+    update_orientation_listeners: function() {
+      // 今設定されているorientationのLisnterを破棄
+      if (this.orientationEventLister) {
+        window.removeEventListener(
+          "deviceorientation",
+          this.orientationEventLister
+        );
+      }
+      // 新しいハンドラを定義しEventLisnterについか
+      const newListner = _.throttle(
+        this.deviceOrientation,
+        this.throttle_milisec
+      );
+      window.addEventListener("deviceorientation", newListner);
+      // 新しいハンドラを破棄のために記録
+      this.orientationEventLister = newListner;
+    },
     register_payload_json: function() {
       const [x, y, z, alpha, beta, gamma] = [
         this.x,
@@ -225,12 +232,7 @@ export default {
       setTimeout(this.polling, this.throttle_milisec);
     },
     throttled: function(func, throttle) {
-      if (!this.memoize_thrttoled)
-        this.memoize_thrttoled = _.memoize(
-          (func, throttle) => _.throttle(func, throttle),
-          (func, throttle) => func.name + throttle
-        );
-      return this.memoize_thrttoled(func, throttle);
+      return _.throttle(func, throttle);
     },
     request_permission: function() {
       this.permission = true;
@@ -303,10 +305,10 @@ export default {
     },
     post_data: function() {
       if (this.data_type.includes("container")) {
-        this.throttled(this.post_binary_data, this.throttle_milisec)();
+        this.post_binary_data();
       }
       if (this.data_type.includes("json")) {
-        this.throttled(this.post_json_data, this.throttle_milisec)();
+        this.post_json_data();
       }
     },
     health: async function() {

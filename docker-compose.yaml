@@ -1,8 +1,9 @@
 # this file for build
 services:
   app:
-    image: public.ecr.aws/l1b7e4q9/websensor:0.0.1
+    image: public.ecr.aws/l1b7e4q9/websensor:0.0.2
     build: .
+    init: true
     ports:
       - "80:3000"
     environment:

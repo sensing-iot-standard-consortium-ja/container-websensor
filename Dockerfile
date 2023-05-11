@@ -1,9 +1,7 @@
-FROM node:lts as builder
+FROM node:16 as builder
 
 WORKDIR /app
-
 COPY . /app
-
 RUN yarn install \
     --prefer-offline \
     --frozen-lockfile \
@@ -19,7 +17,7 @@ RUN rm -rf node_modules && \
     --non-interactive \
     --production=true
 
-FROM node:lts
+FROM node:16
 
 WORKDIR /app
 
